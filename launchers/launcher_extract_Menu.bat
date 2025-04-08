@@ -1,0 +1,1 @@
+python.exe ../python/extract_Menu.py
