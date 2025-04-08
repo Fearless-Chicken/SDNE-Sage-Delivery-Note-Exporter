@@ -1,0 +1,9 @@
+[JJ-MM-AAAA hh:mm:ss] Export éffectué 
+    Résultat : SUCCES/ECHEC
+    Plage : JJ-MM-AAAA -> JJ-MM-AAAA
+    Nom du fichier : <nom du fichier>
+    Nombre de BL : <nombre de BL>
+    Liste des BL : <liste des BL>
+    ErreurCSV : <> (en cas d'échec sur le csv)
+    ErreurSQL : <> (en cas d'échec sur la base de données)
+    -------------------------------

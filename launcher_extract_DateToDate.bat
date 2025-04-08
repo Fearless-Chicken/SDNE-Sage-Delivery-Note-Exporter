@@ -1,0 +1,1 @@
+python.exe app/controller/main.py
