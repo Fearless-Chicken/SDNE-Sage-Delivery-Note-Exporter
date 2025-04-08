@@ -1,34 +1,18 @@
-import pyodbc
-import csv
+# ────────────────────────────────────
+# SDNE - Sage Delivery Note Exporter
+# Développé par Fearless-Chicken
+# © 2025 - Tous droits réservés
+# ────────────────────────────────────
+import pyodbc, csv
+from typing import List, Tuple, Any, Optional
+from datetime import date
 
-headers = [
-    "Type de document",
-    "Ref client",
-    "Date de départ",
-    "Nom destinataire",
-    "Adresse",
-    "Code postal",
-    "Ville",
-    "Mobile",
-    "Mail"
-]
-
-NumberToMonth = {
-        1: "Jan",
-        2: "Fev",
-        3: "Mar",
-        4: "Avr",
-        5: "Mai",
-        6: "Jun",
-        7: "Jul",
-        8: "Aou",
-        9: "Sep",
-        10: "Oct",
-        11: "Nov",
-        12: "Dec"
-}
+## Définition de variables utiles
+headers = ["Type de document","Ref client","Date de départ","Nom destinataire","Adresse","Code postal","Ville","Mobile","Mail"]
+NumberToMonth = {1: "Jan",2: "Fev",3: "Mar",4: "Avr",5: "Mai",6: "Jun",7: "Jul",8: "Aou",9: "Sep",10: "Oct",11: "Nov",12: "Dec"}
 
 def correcTel(num:str)->str:
+    '''Sert à ré-arranger le format des numéro de tel'''
     num = num.replace(" ", "").replace(".", "").replace("-", "")
     if len(num) == 10 and num[0] == '0':
         return num
@@ -42,9 +26,11 @@ def correcTel(num:str)->str:
         return "Numéro de téléphone invalide"
 
 def spaceTel(num:str)->str:
+    '''Remet des espaces entre les numéro de tel'''
     return ' '.join(f"{num[i]}{num[i+1]}" for i in range(0, len(num), 2))
 
-def extractConf(config = {}):
+def extractConf(config = {}) -> dict[str:str]:
+    '''Récupère la config dans le fichier de conf '''
     with open('app/config/config.conf', 'r', encoding='utf-8') as f:
         lines = f.readlines()
         config['server']   = lines[0].strip().split(" : ")[1].replace('"', '').replace("'", '')
@@ -53,7 +39,9 @@ def extractConf(config = {}):
         config['password'] = lines[3].strip().split(" : ")[1].replace('"', '').replace("'", '')
     return config
 
-def con(conf=extractConf()):
+def con(conf=extractConf()) -> Tuple:
+    '''Se sert de la configuration pour se connecter à la database'''
+    print("🔄 Connection à la base de donnée...")
     conn_str = (
         'DRIVER={ODBC Driver 17 for SQL Server};'
         f'SERVER={conf['server']};'
@@ -67,15 +55,23 @@ def con(conf=extractConf()):
             print("nop")
         cursor = conn.cursor()
     except Exception as e:
-        print("err",e)
+        print("❌ Erreur lors de la connection")
         return None, None
+    print("✅ Connection établie..")
     return conn, cursor
 
+def ExtractD2D(cursor, dateDeb, dateFin):
+    '''Exécute la requête formatée avec les dates fournies'''
+    cursor.execute(open('app/SQL/ExtractD2D.sql','r',encoding='utf-8').read().replace("{dateDeb}", dateDeb).replace("{dateFin}", dateFin))
+    return cursor
 
-def GenReq(dateDeb, dateFin):
-    return open('app/SQL/extract.sql','r',encoding='utf-8').read().replace("{dateDeb}", dateDeb).replace("{dateFin}", dateFin)
+def ExtractALL(cursor):
+    '''Exécute la requête extractALL'''
+    cursor.execute(open('app/SQL/ExtractAllUnexported.sql','r',encoding='utf-8').read())
+    return cursor
 
-def tryDate(date):
+def tryDate(date:str) -> Optional[str]:
+    '''Test si le format de la date est correcte pour la rendre en YYYY-MM-DD'''
     from datetime import datetime    
     try:
         # Essaye de parser au format jj-mm-aaaa
@@ -86,11 +82,12 @@ def tryDate(date):
         input("❌ Format invalide. Utilise jj-mm-aaaa.\nAppuyer sur <entrer> pour continuer...")
         return None
 
-def clear():
+def clear()->None:
+    '''Vide l'écran'''
     import os
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def log(result, dateDeb, dateFin, fileName, nb, errorCSV, errorSQL):
+def log(result:str, dateDeb:date, dateFin:date, fileName:str, nb:int, errorCSV:str, errorSQL:str) -> None:
     '''
     1. Déplace le dossier log<Ancien_Mois> s'il s'agit du premier export du mois 
     2. Ajoute les logs dans log<Mois_Actuel> avec le résultat de l'export
@@ -125,27 +122,51 @@ def log(result, dateDeb, dateFin, fileName, nb, errorCSV, errorSQL):
     ErreurSQL : {errorSQL}
     -------------------------------\n""")
 
-def setExtracted(ListeBL:list,cursor):
+def emptyLog()->None:
+    '''
+    1. Déplace le dossier log<Ancien_Mois> s'il s'agit du premier export du mois 
+    2. Ajoute les logs dans log<Mois_Actuel> avec le résultat de l'export
+    '''
+    from datetime import datetime
+    import os
+
+    ## Etape 1 
+    listDir = os.listdir("app/log")
+    listDir.remove("Ancienne logs")
+    listDir.remove("template.log")
+    if listDir[0] != f"log{NumberToMonth[int(datetime.today().strftime('%m'))]}.log":
+        os.rename(
+            os.path.join("log", listDir[0]),
+            os.path.join("log", "Ancienne logs", listDir[0])
+        )
+    
+    ## Etape 2
+    try:
+        curLogs = open(f'app/log/log{NumberToMonth[int(datetime.today().strftime('%m'))]}.log', 'r', encoding='utf-8').read()
+    except FileNotFoundError:
+        print("Le fichier de log de ce mois n'existe pas. Création en cours...")
+        curLogs = ""
+    with open(f'app/log/log{NumberToMonth[int(datetime.today().strftime('%m'))]}.log', 'w', encoding='utf-8') as f:
+        f.write(f"""{curLogs}\n[{datetime.today().strftime('%d-%m-%Y_%H:%M:%S')}] Pas de nouveaux BL, Aucun export effectué
+    -------------------------------\n""")
+
+def setExtracted(ListeBL:list,cursor)-> Optional[str]:
     from datetime import datetime
     try:
+        print("🔄 Modification de l'état des BL dans la base")
         for BL in ListeBL:
-            request = f"""
-UPDATE 
-    [BIJOU].[dbo].[F_DOCENTETE]
-SET 
-	[BIJOU].[dbo].[F_DOCENTETE].[Exporté] = 'Oui',
-	[BIJOU].[dbo].[F_DOCENTETE].[Date d'export] = '{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}'
-WHERE 
-    [BIJOU].[dbo].[F_DOCENTETE].[DO_Piece] = '{BL}';
-"""
+            request = open("app/SQL/UpdateBL.sql","r",encoding="utf-8").read().replace("{todaydate}", datetime.today().strftime('%Y-%m-%d %H:%M:%S')).replace("{BL}",BL)
             cursor.execute(request)
             cursor.commit()
+        print("✅ Modification de l'état des BL dans la base terminé avec succès")
         return None
     except Exception as e:
         errorSQL = str(e)
+        print("❌ Erreur lors de la modification !")
         return errorSQL
     
-def CreateCSV(data,nb=0,error=None,listeBL=[]):
+# def CreateCSV(data:list,nb=0,error=None,listeBL=[])->Tuple[str, date, date, str, int, str, List[Any]]:
+def CreateCSV(data:list,nb=0,error=None,listeBL=[])->Tuple[str, str, int, str, List[Any]]:
     '''1. Créer un CSV <D2D_export_bl_JJ-MM-AAAA_hh-mm-ss.csv> à partir des données récupérées
        2. Ajoute le tag exporté dans la base de données pour éviter les doublons
        3. Déclanche la gestion des logs'''
@@ -153,6 +174,7 @@ def CreateCSV(data,nb=0,error=None,listeBL=[]):
     if "extracted" not in os.listdir("app"):
         os.mkdir("app/extracted")
     try:
+        print("🔄 Exportation des BL.")
         from datetime import datetime
         with open(f"app/extracted/D2D_export_bl_{datetime.today().strftime('%d-%m-%Y_%H-%M-%S')}.csv", "w", newline="", encoding="utf-8-sig") as f:
             writer = csv.writer(f, delimiter=';')
@@ -171,48 +193,47 @@ def CreateCSV(data,nb=0,error=None,listeBL=[]):
                 listeBL.append(row[1])
         print("✅ Export terminé avec succès.")
     except Exception as e:
-        print("❌ Erreur lors de l'écriture du fichier :", e)
+        print("❌ Erreur lors de l'export !")
         error = str(e)
-    return "OK" if error is None else "KO", dateDeb, dateFin, f"D2D_export_bl_{datetime.today().strftime('%d-%m-%Y_%H-%M-%S')}.csv", nb, error, listeBL
+    # return "OK" if error is None else "KO", dateDeb, dateFin, f"D2D_export_bl_{datetime.today().strftime('%d-%m-%Y_%H-%M-%S')}.csv", nb, error, listeBL
+    return "OK" if error is None else "KO", f"D2D_export_bl_{datetime.today().strftime('%d-%m-%Y_%H-%M-%S')}.csv", nb, error, listeBL
 
 if __name__ == "__main__":
+    dateDeb = "Export"
+    dateFin = "total"
     try: 
-        ## On tente de se connecter à la base de données
-        print("Connecting to database...")
+        ## Connection à la base de données
         conn, cursor = con()
         if conn is None:
             raise Exception("Connection failed")
-        print("Connected to database successfully.")
-        
-        ## On demande à l'utilisateur de rentrer les dates de début et de fin
-        clear()
-        dateDeb = None
-        while dateDeb is None:
-            clear()
-            dateDeb = tryDate(input("Entre une date de début de période (jj-mm-aaaa) : "))
-        clear()
-        dateFin = None
-        while dateFin is None:
-            clear()
-            dateFin = tryDate(input("Entre une date de fin de période (jj-mm-aaaa) : "))
 
-        ## On essaie d'exécuter la requête SQL
+        ## Exécution de la requête SQL
         try:
-            cursor.execute(GenReq(dateDeb, dateFin))
+            cursor = ExtractALL(cursor)
         except Exception as e:
-            print("Erreur dans la requête :", e)
-        
-        
-        data = cursor.fetchall()
+            print("❌ Erreur dans la requête :")        
     
-        status, dateDeb, dateFin, name, nb, errorCSV, listeBL = CreateCSV(data)
-        errorSQL = setExtracted(listeBL, cursor)
-        log(status, dateDeb, dateFin, name, nb, errorCSV, errorSQL)
+        ## Récupération de la data exporté
+        data = cursor.fetchall()
+        if data != []:
+            ## Création du CSV
+            status, name, nb, errorCSV, listeBL = CreateCSV(data)
+            print(f"✅ {nb} Bon{"s" if nb>1 else""} de livraison{"s" if nb>1 else""} {"ont" if nb>1 or nb==0 else "a"} été exporté{"s" if nb>1 else""} {"" if nb == 0 else "avec succès."}")
+
+            ## Mise à jour du status des BL dans la base
+            errorSQL = setExtracted(listeBL, cursor)
+            
+            ## Création des logs de la session
+            log(status, dateDeb, dateFin, name, nb, errorCSV, errorSQL)
+            
+        else:
+            emptyLog()
+            print("📭 Aucun nouveau bon de livraison, pas d'export nécessaire.")
         conn.close()
-        input("Vous pouvez fermer la fenêtre.")
+        input("✅ Vous pouvez fermer la fenêtre ou appuyer sur <Entrée> pour terminer.")
     except KeyboardInterrupt:
         clear()
         input("Appuyer sur <entrer> pour quitter...")
         clear()
-    # except Exception as e:
-    #     print(e)
+    except Exception as e:
+        print(e)

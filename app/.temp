@@ -1,0 +1,22 @@
+# Nécéssaire pour l'extraction de date à date
+# Récupératiion des dates de début et de fin de periode d'export
+# clear()
+# dateDeb = None
+# while dateDeb is None:
+#     clear()
+#     dateDeb = tryDate(input("Entre une date de début de période (jj-mm-aaaa) : "))
+# clear()
+# dateFin = None
+# while dateFin is None:
+#     clear()
+#     dateFin = tryDate(input("Entre une date de fin de période (jj-mm-aaaa) : "))
+# # Exécution de la requête SQL
+# try:
+#     cursor = ExtractD2D(cursor, dateDeb, dateFin)
+# except Exception as e:
+#     print("❌ Erreur dans la requête :")
+# ## Récupération de la data et création du CSV
+# data = cursor.fetchall()
+# status, dateDeb, dateFin, name, nb, errorCSV, listeBL = CreateCSV(data)
+# errorSQL = setExtracted(listeBL, cursor)
+# log(status, dateDeb, dateFin, name, nb, errorCSV, errorSQL)

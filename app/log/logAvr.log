@@ -1,30 +1,12 @@
 
-[08-04-2025_12:03:41] Export effectué
-    Résultat : KO
-    Plage : 2024-01-01 -> 2024-12-31
-    Nom du fichier : D2D_export_bl_08-04-2025_12-03-41.csv
-    Nombre de BL : 0
-    Liste des BL : 
-    ErreurCSV : [Errno 2] No such file or directory: 'app/lextracted/D2D_export_bl_08-04-2025_12-03-41.csv'
-    ErreurSQL : None
+[08-04-2025_16:43:42] Pas de nouveaux BL, Aucun export effectué
     -------------------------------
 
-[08-04-2025_12:04:04] Export effectué
-    Résultat : KO
-    Plage : 2024-01-01 -> 2024-12-31
-    Nom du fichier : D2D_export_bl_08-04-2025_12-04-04.csv
-    Nombre de BL : 0
-    Liste des BL : 
-    ErreurCSV : [Errno 2] No such file or directory: 'app/extracted/D2D_export_bl_08-04-2025_12-04-04.csv'
-    ErreurSQL : None
+[08-04-2025_16:43:51] Pas de nouveaux BL, Aucun export effectué
     -------------------------------
 
-[08-04-2025_12:04:45] Export effectué
-    Résultat : OK
-    Plage : 2024-01-01 -> 2024-12-31
-    Nom du fichier : D2D_export_bl_08-04-2025_12-04-45.csv
-    Nombre de BL : 0
-    Liste des BL : 
-    ErreurCSV : None
-    ErreurSQL : None
+[08-04-2025_16:45:25] Pas de nouveaux BL, Aucun export effectué
+    -------------------------------
+
+[08-04-2025_16:45:33] Pas de nouveaux BL, Aucun export effectué
     -------------------------------
